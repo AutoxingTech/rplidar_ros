@@ -254,7 +254,7 @@ namespace sl {
 
         if (angle_sum >= assemble_angle)
         {
-            ROS_INFO_THROTTLE(60, "angle_sum is %lf, count is %zu", angle_sum, count_sum);
+            ROS_DEBUG_THROTTLE(30, "angle_sum is %lf, count is %zu", angle_sum, count_sum);
             pub.publish(ax_laser_msg);
 
             ax_laser_msg.ranges.resize(0);
