@@ -210,7 +210,8 @@ namespace sl {
 
     // pub ax laser scan code.
     static rplidar_ros::AxLaserScan ax_laser_msg;
-    static size_t point_count = 0; 
+    double angle_sum = 0;
+    size_t count_sum = 0;
 
     inline int16_t Util_degreeToI16(float degree)
     {
@@ -220,18 +221,17 @@ namespace sl {
     static void assemble_scan(ros::Publisher &pub,
                               const sl_lidar_response_measurement_node_hq_t *nodes,
                               size_t node_count, ros::Time now,
-                              size_t assemble_count)
+                              double assemble_angle)
     {
         if (ax_laser_msg.ranges.size() == 0) // first pack
         {
             ax_laser_msg.header.stamp = now;
         }
 
-        point_count += node_count;
         for (size_t i = 0; i < node_count; i++)
         {
             float range = (float)nodes[i].dist_mm_q2 / 4.0f / 1000; // m
-            float degree = getAngle(nodes[i]);                      // degree
+            float degree = getAngle(nodes[i]);                      // degree [0, 360]
             ros::Duration time_delta = now - ax_laser_msg.header.stamp;
             if (range > 0)
             {
@@ -242,14 +242,28 @@ namespace sl {
             }
         }
 
-        if (point_count >= assemble_count)
+        // 直接使用 ax_laser_msg 有可能不准确，因为里面去掉了噪点
+        static float last_max_angle = getAngle(nodes[0]);           // degree [0, 360]
+        float current_max_angle = getAngle(nodes[node_count-1]);    // degree [0, 360]
+        float delta = current_max_angle - last_max_angle;
+        if (current_max_angle < last_max_angle)
+            delta += 360.;
+        angle_sum += delta;
+        last_max_angle = current_max_angle;
+        count_sum += node_count;
+
+        if (angle_sum >= assemble_angle)
         {
+            ROS_INFO_THROTTLE(60, "angle_sum is %lf, count is %zu", angle_sum, count_sum);
             pub.publish(ax_laser_msg);
+
             ax_laser_msg.ranges.resize(0);
             ax_laser_msg.angles.resize(0);
             ax_laser_msg.intensities.resize(0);
             ax_laser_msg.time_deltas.resize(0);
-            point_count = 0;
+
+            angle_sum = 0;
+            count_sum = 0;
         }
     }
 
@@ -1696,13 +1710,15 @@ namespace sl {
 
             _waitCapsuledNode(capsule_node); // // always discard the first data since it may be incomplete
 
-            int laser_points_count = 3200;
-            std::string ax_topic_name ;
-            
             ros::NodeHandle nh("~");
             
-            nh.getParamCached("laser_points_count", laser_points_count);
+            double assemble_angle = 360.0;
+            nh.getParamCached("assemble_angle", assemble_angle);
+            ROS_INFO("assemble_angle is %lf", assemble_angle);
+
+            std::string ax_topic_name;
             nh.param<std::string>("ax_scan_topic", ax_topic_name, "/ax_laser_scan");
+
             ros::Publisher scan_pub = nh.advertise<rplidar_ros::AxLaserScan>(ax_topic_name, 10);
             ax_laser_msg.header.frame_id = "horizontal_laser_link";
 
@@ -1728,7 +1744,7 @@ namespace sl {
                 }
 
                 // publish axlaser scan and mark time.
-                assemble_scan(scan_pub, local_buf, count, ros::Time::now(), laser_points_count);
+                assemble_scan(scan_pub, local_buf, count, ros::Time::now(), assemble_angle);
 
                 for (size_t pos = 0; pos < count; ++pos) {
                     if (local_buf[pos].flag & SL_LIDAR_RESP_MEASUREMENT_SYNCBIT) {
