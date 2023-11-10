@@ -223,8 +223,28 @@ namespace sl {
                               size_t node_count, ros::Time now,
                               double assemble_angle)
     {
-        if (ax_laser_msg.ranges.size() == 0) // first pack
+        if (!ax_laser_msg.ranges.empty())
         {
+            if (now - ax_laser_msg.header.stamp > ros::Duration(5.))
+            {
+                ROS_WARN("now is %lf, header is %lf, too old, ignore",
+                    now.toSec(), ax_laser_msg.header.stamp.toSec());
+
+                // long time no data receive, clear old data, treat as first pack
+                ax_laser_msg.header.stamp = now;
+
+                ax_laser_msg.ranges.resize(0);
+                ax_laser_msg.angles.resize(0);
+                ax_laser_msg.intensities.resize(0);
+                ax_laser_msg.time_deltas.resize(0);
+
+                angle_sum = 0;
+                count_sum = 0;
+            }
+        }
+        else
+        {
+            // first pack
             ax_laser_msg.header.stamp = now;
         }
 
