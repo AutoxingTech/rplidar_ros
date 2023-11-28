@@ -253,7 +253,7 @@ namespace sl {
             float range = (float)nodes[i].dist_mm_q2 / 4.0f / 1000; // m
             float degree = getAngle(nodes[i]);                      // degree [0, 360]
             ros::Duration time_delta = now - ax_laser_msg.header.stamp;
-            if (range > 0)
+            // if (range > 0)
             {
                 ax_laser_msg.ranges.push_back(range * 1000);
                 ax_laser_msg.angles.push_back(Util_degreeToI16(degree));
@@ -275,6 +275,7 @@ namespace sl {
         if (angle_sum >= assemble_angle)
         {
             ROS_DEBUG_THROTTLE(30, "angle_sum is %lf, count is %zu", angle_sum, count_sum);
+            ax_laser_msg.speed = 62.8318519;
             pub.publish(ax_laser_msg);
 
             ax_laser_msg.ranges.resize(0);
