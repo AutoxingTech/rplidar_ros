@@ -19,12 +19,13 @@ find_package(catkin REQUIRED COMPONENTS
   std_srvs
   sensor_msgs
   message_generation
+  cln_msgs
 )
 
-add_message_files(
-  DIRECTORY msg
-  FILES AxLaserScan.msg
-)
+# add_message_files(
+#   DIRECTORY msg
+#   FILES AxLaserScan.msg
+# )
 
 generate_messages(
     DEPENDENCIES
@@ -39,7 +40,7 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-catkin_package()
+catkin_package(CATKIN_DEPENDS cln_msgs)
 
 add_executable(rplidarNode src/node.cpp ${RPLIDAR_SDK_SRC})
 target_link_libraries(rplidarNode ${catkin_LIBRARIES})

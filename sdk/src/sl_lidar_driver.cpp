@@ -41,7 +41,7 @@
 #include "sl_lidar_driver.h"
 #include "sl_crc.h" 
 #include <algorithm>
-#include "rplidar_ros/AxLaserScan.h"
+#include "cln_msgs/AxLaserScan.h"
 
 #ifdef _WIN32
 #define NOMINMAX
@@ -209,7 +209,7 @@ namespace sl {
     }
 
     // pub ax laser scan code.
-    static rplidar_ros::AxLaserScan ax_laser_msg;
+    static cln_msgs::AxLaserScan ax_laser_msg;
     double angle_sum = 0;
     size_t count_sum = 0;
 
@@ -1740,7 +1740,7 @@ namespace sl {
             std::string ax_topic_name;
             nh.param<std::string>("ax_scan_topic", ax_topic_name, "/ax_laser_scan");
 
-            ros::Publisher scan_pub = nh.advertise<rplidar_ros::AxLaserScan>(ax_topic_name, 10);
+            ros::Publisher scan_pub = nh.advertise<cln_msgs::AxLaserScan>(ax_topic_name, 10);
             ax_laser_msg.header.frame_id = "horizontal_laser_link";
 
             while (_isScanning) {
